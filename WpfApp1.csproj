@@ -11,6 +11,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Resource Include="Resources\intersection.png" />
+    <Resource Include="Resources\difference.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\union.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
   </ItemGroup>
 

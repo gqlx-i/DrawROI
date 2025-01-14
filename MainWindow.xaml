@@ -7,21 +7,5 @@
         xmlns:local="clr-namespace:WpfApp1"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition/>
-            <RowDefinition Height="60"/>
-        </Grid.RowDefinitions>
-        <ha:HSmartWindowControlWPF x:Name="smartControl" Grid.Column="1" HInitWindow="smartControl_HInitWindow">
-            <ha:HIconicDisplayObjectWPF IconicObject="{Binding DisplayImage, Mode=OneWay}" />
-            <ha:HIconicDisplayObjectWPF HColor="red" IconicObject="{Binding DisplayCrossLine, Mode=OneWay}" />
-        </ha:HSmartWindowControlWPF>
-        <Canvas x:Name="cvs" Panel.ZIndex="1" Visibility="Collapsed" Background="Transparent" MouseLeftButtonDown="cvs_MouseLeftButtonDown" MouseRightButtonDown="cvs_MouseRightButtonDown" MouseLeftButtonUp="cvs_MouseLeftButtonUp" MouseMove="cvs_MouseMove"/>
-        <WrapPanel Grid.Row="1">
-            <Button Width="100" Content="Rectangle" Click="Rectangle_Button_Click"/>
-            <Button Width="100" Content="Circle" Click="Ellipse_Button_Click"/>
-            <Button Width="100" Content="Line" Click="Line_Button_Click"/>
-            <Button Width="100" Content="clear" Click="Clear_Button_Click"/>
-        </WrapPanel>
-    </Grid>
+    <local:ROICanvas/>
 </Window>
