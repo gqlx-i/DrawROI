@@ -29,9 +29,118 @@ namespace WpfApp1
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 
+        private HRegion _crossLine;
+        /// <summary>
+        /// 十字辅助线
+        /// </summary>
+        public HRegion CrossLine
+        {
+            get => _crossLine;
+            set
+            {
+                if (_crossLine != value)
+                {
+                    _crossLine?.Dispose();
+                    _crossLine = value;
+                }
+            }
+        }
+        private HRegion _displayCrossLine;
+        /// <summary>
+        /// 十字辅助线
+        /// </summary>
+        public HRegion DisplayCrossLine
+        {
+            get => _displayCrossLine;
+            set
+            {
+                if (_displayCrossLine != value)
+                {
+                    _displayCrossLine = value;
+                    this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayCrossLine)));
+                }
+            }
+        }
+        #region 依赖属性
+        /// <summary>
+        /// 是否显示十字辅助线
+        /// </summary>
+        public bool IsShowCrossLine
+        {
+            get { return (bool)GetValue(IsShowCrossLineProperty); }
+            set { SetValue(IsShowCrossLineProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for IsShowCrossLine.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty IsShowCrossLineProperty =
+            DependencyProperty.Register("IsShowCrossLine", typeof(bool), typeof(ROICanvas), new PropertyMetadata(false, OnIsShowCrossLineChanged));
+        
+        private static void OnIsShowCrossLineChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var control = d as ROICanvas;
+            bool newval = (bool)e.NewValue;
+            if (newval)
+            {
+                control!.DisplayCrossLine = control!.CrossLine;
+            }
+            else
+            {
+                control!.DisplayCrossLine = null;
+            }
+        }
+
+        /// <summary>
+        /// 显示的图像
+        /// </summary>
+        public HImage DisplayImage
+        {
+            get { return (HImage)GetValue(DisplayImageProperty); }
+            set { SetValue(DisplayImageProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for DisplayImage.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty DisplayImageProperty =
+            DependencyProperty.Register("DisplayImage", typeof(HImage), typeof(ROICanvas), new PropertyMetadata(null, OnDisplayImageChanged));
+        private static void OnDisplayImageChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var control = d as ROICanvas;
+            var oldImg = e.OldValue as HImage;
+            oldImg?.Dispose();
+            oldImg = null;
+            var newImg = e.NewValue as HImage;
+            if (newImg != null)
+            {
+                newImg.GetImageSize(out HTuple width, out HTuple height);
+
+                // 计算精确的中心点
+                double centerX = width.D / 2.0;
+                double centerY = height.D / 2.0;
+
+                // 生成竖线
+                HRegion verticalLine = new HRegion();
+                verticalLine.GenRegionLine(0, centerX, height.D, centerX);
+
+                // 生成横线
+                HRegion horizontalLine = new HRegion();
+                horizontalLine.GenRegionLine(centerY, 0, centerY, width.D);
+
+                // 合并两条线
+                control!.CrossLine = verticalLine.ConcatObj(horizontalLine);
+
+                // 释放临时区域
+                verticalLine.Dispose();
+                horizontalLine.Dispose();
+                if (control!.IsShowCrossLine && control!.DisplayCrossLine == null)
+                {
+                    control!.DisplayCrossLine = control!.CrossLine;
+                }
+            }
+        }
+        #endregion
+
         EShape ShapeType;
         Shape Shape;
-        EROIMode Mode; 
+        EROIMode Mode = EROIMode.Union; 
 
         //roi集合
         ObservableCollection<HDrawingObject> DrawingObjects = new ObservableCollection<HDrawingObject>();
@@ -40,8 +149,6 @@ namespace WpfApp1
         public ObservableCollection<ROIData> ROIDatas { get; set; } = new ObservableCollection<ROIData>();
 
         string SelectedROIType;
-
-        public HImage DisplayImage { get; set; }
 
         HWindow HWindow;
 
@@ -72,8 +179,7 @@ namespace WpfApp1
         public ROICanvas()
         {
             InitializeComponent();
-            DisplayImage = new HImage(@"C:\Users\Lenovo\Downloads\123.png");
-            DataContext = this;
+            this.DataContext = this;
         }
 
         /// <summary>
@@ -596,6 +702,11 @@ namespace WpfApp1
             }
             DrawingObjects.Clear();
         }
+        /// <summary>
+        /// 清除当前ROI
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ClearCur_Button_Click(object sender, RoutedEventArgs e)
         {
             if (SelectedHDrawingObject == null)

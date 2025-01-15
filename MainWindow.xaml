@@ -7,5 +7,10 @@
         xmlns:local="clr-namespace:WpfApp1"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <local:ROICanvas/>
+    <Window.DataContext>
+        <local:MainVM/>
+    </Window.DataContext>
+    <Grid>
+        <local:ROICanvas DisplayImage="{Binding DataContext.DisplayImg, RelativeSource={RelativeSource AncestorType=Grid}}" IsShowCrossLine="True"/>
+    </Grid>
 </Window>
