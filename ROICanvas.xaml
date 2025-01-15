@@ -7,109 +7,14 @@
              xmlns:local="clr-namespace:WpfApp1"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <UserControl.Resources>
-        <ContextMenu x:Key="contextmenu" Width="120">
-            <MenuItem Header="模式" IsEnabled="True">
-                <MenuItem Header="并集" Click="Union_MenuItem_Click">
-                    <MenuItem.Icon>
-                        <Viewbox>
-                            <Image Source="pack://application:,,,/Resources/union.png"/>
-                        </Viewbox>
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Header="交集" Click="Intersection_MenuItem_Click">
-                    <MenuItem.Icon>
-                        <Viewbox>
-                            <!--同一个程序集内可以省略前缀-->
-                            <Image Source="/Resources/difference.png"/>
-                        </Viewbox>
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Header="差集" Click="Difference_MenuItem_Click">
-                    <MenuItem.Icon>
-                        <Viewbox>
-                            <Image Source="/Resources/intersection.png"/>
-                        </Viewbox>
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem.Icon>
-                    <Viewbox>
-                        <Image Source="{Binding SelectedModeImg}"/>
-                    </Viewbox>
-                </MenuItem.Icon>
-            </MenuItem>
-            <Separator/>
-            <MenuItem Header="矩形" Click="Rectangle1_Button_Click">
-                <MenuItem.Icon>
-                    <Viewbox>
-                        <Path Data="M1024 842H0V182h1024v660zM60 782h904V242H60v540z" Fill="Black"/>
-                    </Viewbox>
-                </MenuItem.Icon>
-            </MenuItem>
-            <Separator/>
-            <MenuItem Header="旋转矩形" Click="Rectangle2_Button_Click">
-                <MenuItem.Icon>
-                    <Viewbox>
-                        <Path Data="M1024 842H0V182h1024v660zM60 782h904V242H60v540z" Fill="Black">
-                            <Path.RenderTransform>
-                                <RotateTransform Angle="10" CenterX="512" CenterY="330"/>
-                            </Path.RenderTransform>
-                        </Path>
-                    </Viewbox>
-                </MenuItem.Icon>
-            </MenuItem>
-            <Separator/>
-            <MenuItem Header="圆" Click="Circle_Button_Click">
-                <MenuItem.Icon>
-                    <Viewbox>
-                        <Path Data="M512 928C282.624 928 96 741.376 96 512S282.624 96 512 96s416 186.624 416 416-186.624 416-416 416z m0-768C317.92 160 160 317.92 160 512s157.92 352 352 352 352-157.92 352-352S706.08 160 512 160z" Fill="Black"/>
-                    </Viewbox>
-                </MenuItem.Icon>
-            </MenuItem>
-            <Separator/>
-            <MenuItem Header="椭圆" Click="Ellipse_Button_Click">
-                <MenuItem.Icon>
-                    <Viewbox>
-                        <Path Data="M512 838.656c-228.864 0-415.232-146.432-415.232-326.656 0-180.224 186.368-326.656 415.232-326.656 228.864 0 415.232 146.432
-                      415.232 326.656 0 180.224-186.368 326.656-415.232 326.656z m0-589.312c-194.048 0-351.232 117.76-351.232 262.656 0 144.896 157.696 262.656 351.232 262.656s351.232-117.76 351.232-262.656c0-144.896-157.184-262.656-351.232-262.656z" Fill="Black"/>
-                    </Viewbox>
-                </MenuItem.Icon>
-            </MenuItem>
-            <Separator/>
-            <MenuItem Header="直线" Click="Line_Button_Click">
-                <MenuItem.Icon>
-                    <Viewbox>
-                        <Path Data="M65 89.4c0-5.9 2.3-11.8 6.8-16.3 9-9 23.69999999-9 32.7 0L949.8 918.3c9 9 9 23.69999999 0 32.7-9 9-23.69999999 9-32.7 0L71.8 105.7c-4.5-4.5-6.8-10.4-6.8-16.3z" Fill="Black"/>
-                    </Viewbox>
-                </MenuItem.Icon>
-            </MenuItem>
-            <Separator/>
-            <MenuItem Header="清除当前ROI" Click="ClearCur_Button_Click">
-                <MenuItem.Icon>
-                    <Viewbox>
-                        <Path Data="M884.224 339.968L586.752 130.56c-17.408-12.288-40.96-8.192-53.76 8.704l-401.92 547.328c-12.8 17.408-8.704 42.496 9.216 54.784L356.864 893.44c6.656 4.608 14.336 7.168 22.528 7.168h123.392c12.288 0 24.064-6.144 31.232-15.872L893.44 394.752c12.288-17.408 8.192-41.984-9.216-54.784zM632.32 619.008L482.816 822.784h-91.648l-174.08-122.368 181.248-246.272L632.32 619.008z" Fill="Black"/>
-                    </Viewbox>
-                </MenuItem.Icon>
-            </MenuItem>
-            <Separator/>
-            <MenuItem Header="清除所有ROI" Click="ClearAll_Button_Click">
-                <MenuItem.Icon>
-                    <Viewbox>
-                        <Path Data="M752.3 91.3l-34.7-16.8c-26.1-12.6-57.5-1.7-70.1 24.5L531.8 338.4l-6.9-3.4c-64.1-30.9-141.1-4.1-172 60l-10 20.7 375.2 181.2 10-20.7c30.9-64.1 4.1-141.1-60-172l-6.9-3.3 115.6-239.4c12.6-26.2 1.7-57.6-24.5-70.2zM702 630L326.3 448.6c-22.9 30-52.5 63.8-90.1
-                      97.4-57.5 51.4-114.5 85.3-159.6 107.4 13.1 41.4 40.8 61.3 60.3 82.3 7.2 7.8 118.3-112.3 126.3-104.6 8 7.7-87 143.1-78.3 150.6 25.9 22.2 55 43.4 86.7 63.3 6.5 4.1 145.1-185 151.3-181.6 12.4 6.8-87.9 217.4-74.8 223.7 13 6.3 26.1 12.2 39.1 17.7 45.1 19 89.9 33 132.8 42.2 13.1 2.8 82-234.4 94.6-232.5 12.7 1.9-30.8 242.9-18.7 243.9 36.5 3 70.6 1.9 100.9-3.3-10.5-54.4-18.2-124.6-12.5-205.8 3.2-44.5 9.9-84.5 17.7-119.3z" Fill="Black"/>
-                    </Viewbox>
-                </MenuItem.Icon>
-            </MenuItem>
-        </ContextMenu>
-    </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <ha:HSmartWindowControlWPF x:Name="smartControl" ContextMenu="{StaticResource contextmenu}" Grid.Column="0" HInitWindow="smartControl_HInitWindow">
+        <ha:HSmartWindowControlWPF x:Name="SmartControl" ContextMenu="{StaticResource ROICanvas_Menu}" Grid.Column="0" HInitWindow="SmartControl_HInitWindow">
             <ha:HIconicDisplayObjectWPF IconicObject="{Binding DisplayImage, Mode=OneWay}" />
-            <ha:HIconicDisplayObjectWPF HColor="red" IconicObject="{Binding DisplayCrossLine, Mode=OneWay}" />
+            <ha:HIconicDisplayObjectWPF HColor="green" IconicObject="{Binding DisplayCrossLine, Mode=OneWay}" />
         </ha:HSmartWindowControlWPF>
         <Canvas x:Name="Helper_Canvas" Grid.Column="0" Panel.ZIndex="1" Visibility="Collapsed" Background="Transparent" MouseLeftButtonDown="Helper_Canvas_MouseLeftButtonDown" MouseRightButtonDown="Helper_Canvas_MouseRightButtonDown" MouseLeftButtonUp="Helper_Canvas_MouseLeftButtonUp" MouseMove="Helper_Canvas_MouseMove"/>
         <GroupBox Header="ROI信息" Grid.Column="1">

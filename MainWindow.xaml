@@ -11,6 +11,15 @@
         <local:MainVM/>
     </Window.DataContext>
     <Grid>
-        <local:ROICanvas DisplayImage="{Binding DataContext.DisplayImg, RelativeSource={RelativeSource AncestorType=Grid}}" IsShowCrossLine="True"/>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="60"/>
+        </Grid.RowDefinitions>
+        <local:ROICanvas DisplayImage="{Binding DataContext.DisplayImg, RelativeSource={RelativeSource AncestorType=Grid}}" IsShowCrossLine="{Binding ElementName=cb,Path=IsChecked}"/>
+        <StackPanel Orientation="Horizontal" Grid.Row="1">
+            <CheckBox x:Name="cb"/>
+            <ComboBox ItemsSource="{Binding Imgs}" SelectedItem="{Binding DisplayImg}"/>
+        </StackPanel>
     </Grid>
+    
 </Window>

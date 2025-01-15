@@ -1,0 +1,102 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ContextMenu x:Key="ROICanvas_Menu" Width="120">
+        <MenuItem Header="模式" IsEnabled="True">
+            <MenuItem Header="并集" Command="{Binding SelectMergeModeCommand}" CommandParameter="union">
+                <MenuItem.Icon>
+                    <Viewbox>
+                        <Image Source="pack://application:,,,/Resources/union.png"/>
+                    </Viewbox>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="交集" Command="{Binding SelectMergeModeCommand}" CommandParameter="intersection">
+                <MenuItem.Icon>
+                    <Viewbox>
+                        <!--同一个程序集内可以省略前缀-->
+                        <Image Source="/Resources/intersection.png"/>
+                    </Viewbox>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="差集" Command="{Binding SelectMergeModeCommand}" CommandParameter="difference">
+                <MenuItem.Icon>
+                    <Viewbox>
+                        <Image Source="/Resources/difference.png"/>
+                    </Viewbox>
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem.Icon>
+                <Viewbox>
+                    <Image Source="{Binding SelectedModeImg}"/>
+                </Viewbox>
+            </MenuItem.Icon>
+        </MenuItem>
+        <Separator/>
+        <MenuItem Header="矩形" Command="{Binding CreateRectangle1Command}">
+            <MenuItem.Icon>
+                <Viewbox>
+                    <Path Data="M1024 842H0V182h1024v660zM60 782h904V242H60v540z" Fill="Black"/>
+                </Viewbox>
+            </MenuItem.Icon>
+        </MenuItem>
+        <Separator/>
+        <MenuItem Header="旋转矩形" Command="{Binding CreateRectangle2Command}">
+            <MenuItem.Icon>
+                <Viewbox>
+                    <Path Data="{StaticResource Rectangle1}" Fill="Black">
+                        <Path.RenderTransform>
+                            <RotateTransform Angle="10" CenterX="512" CenterY="330"/>
+                        </Path.RenderTransform>
+                    </Path>
+                </Viewbox>
+            </MenuItem.Icon>
+        </MenuItem>
+        <Separator/>
+        <MenuItem Header="圆" Command="{Binding CreateCircleCommand}">
+            <MenuItem.Icon>
+                <Viewbox>
+                    <Path Data="{StaticResource Circle}" Fill="Black"/>
+                </Viewbox>
+            </MenuItem.Icon>
+        </MenuItem>
+        <Separator/>
+        <MenuItem Header="椭圆" Command="{Binding CreateEllipseCommand}">
+            <MenuItem.Icon>
+                <Viewbox>
+                    <Path Data="{StaticResource Ellipse}" Fill="Black"/>
+                </Viewbox>
+            </MenuItem.Icon>
+        </MenuItem>
+        <Separator/>
+        <MenuItem Header="直线" Command="{Binding CreateLineCommand}">
+            <MenuItem.Icon>
+                <Viewbox>
+                    <Path Data="{StaticResource Line}" Fill="Black"/>
+                </Viewbox>
+            </MenuItem.Icon>
+        </MenuItem>
+        <Separator/>
+        <MenuItem Header="裁剪区域" Command="{Binding ReduceDomainCommand}">
+            <MenuItem.Icon>
+                <Viewbox>
+                    <Path Data="{StaticResource ClearCur}" Fill="Black"/>
+                </Viewbox>
+            </MenuItem.Icon>
+        </MenuItem>
+        <Separator/>
+        <MenuItem Header="清除当前ROI" Command="{Binding ClearCurROICommand}">
+            <MenuItem.Icon>
+                <Viewbox>
+                    <Path Data="{StaticResource ClearCur}" Fill="Black"/>
+                </Viewbox>
+            </MenuItem.Icon>
+        </MenuItem>
+        <Separator/>
+        <MenuItem Header="清除所有ROI" Command="{Binding ClearAllROICommand}">
+            <MenuItem.Icon>
+                <Viewbox>
+                    <Path Data="{StaticResource ClearAll}" Fill="Black"/>
+                </Viewbox>
+            </MenuItem.Icon>
+        </MenuItem>
+    </ContextMenu>
+</ResourceDictionary>

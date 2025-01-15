@@ -29,25 +29,13 @@ namespace WpfApp1
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        private HRegion _crossLine;
         /// <summary>
         /// 十字辅助线
         /// </summary>
-        public HRegion CrossLine
-        {
-            get => _crossLine;
-            set
-            {
-                if (_crossLine != value)
-                {
-                    _crossLine?.Dispose();
-                    _crossLine = value;
-                }
-            }
-        }
+        public HRegion CrossLine;
         private HRegion _displayCrossLine;
         /// <summary>
-        /// 十字辅助线
+        /// 十字辅助线(界面绑定)
         /// </summary>
         public HRegion DisplayCrossLine
         {
@@ -61,6 +49,7 @@ namespace WpfApp1
                 }
             }
         }
+
         #region 依赖属性
         /// <summary>
         /// 是否显示十字辅助线
@@ -105,8 +94,6 @@ namespace WpfApp1
         {
             var control = d as ROICanvas;
             var oldImg = e.OldValue as HImage;
-            oldImg?.Dispose();
-            oldImg = null;
             var newImg = e.NewValue as HImage;
             if (newImg != null)
             {
@@ -125,12 +112,13 @@ namespace WpfApp1
                 horizontalLine.GenRegionLine(centerY, 0, centerY, width.D);
 
                 // 合并两条线
+                control?.CrossLine?.Dispose();
                 control!.CrossLine = verticalLine.ConcatObj(horizontalLine);
 
                 // 释放临时区域
                 verticalLine.Dispose();
                 horizontalLine.Dispose();
-                if (control!.IsShowCrossLine && control!.DisplayCrossLine == null)
+                if (control!.IsShowCrossLine)
                 {
                     control!.DisplayCrossLine = control!.CrossLine;
                 }
@@ -138,8 +126,30 @@ namespace WpfApp1
         }
         #endregion
 
+        #region 菜单按钮
+        //区域融合
+        public ICommand SelectMergeModeCommand { get; set; }
+        //矩形
+        public ICommand CreateRectangle1Command { get; set; }
+        //旋转矩形
+        public ICommand CreateRectangle2Command { get; set; }
+        //圆形
+        public ICommand CreateCircleCommand { get; set; }
+        //椭圆
+        public ICommand CreateEllipseCommand { get; set; }
+        //直线
+        public ICommand CreateLineCommand { get; set; }
+        //清除当前ROI
+        public ICommand ClearCurROICommand { get; set; }
+        //清除所有ROI
+        public ICommand ClearAllROICommand { get; set; }
+        //裁剪出区域
+        public ICommand ReduceDomainCommand { get; set; }
+        #endregion
+
         EShape ShapeType;
         Shape Shape;
+        HRegion CurRegion = new HRegion();
         EROIMode Mode = EROIMode.Union; 
 
         //roi集合
@@ -179,6 +189,19 @@ namespace WpfApp1
         public ROICanvas()
         {
             InitializeComponent();
+
+            SelectMergeModeCommand = new DelegateCommand(SelectMergeMode);
+            CreateRectangle1Command = new DelegateCommand(CreateRectangle1);
+            CreateRectangle2Command = new DelegateCommand(CreateRectangle2);
+            CreateCircleCommand = new DelegateCommand(CreateCircle);
+            CreateEllipseCommand = new DelegateCommand(CreateEllipse);
+            CreateLineCommand = new DelegateCommand(CreateLine);
+            ReduceDomainCommand = new DelegateCommand(ReduceDomain);
+            ClearCurROICommand = new DelegateCommand(ClearCurROI);
+            ClearAllROICommand = new DelegateCommand(ClearAllROI);
+
+            CurRegion.GenEmptyRegion();
+
             this.DataContext = this;
         }
 
@@ -187,17 +210,17 @@ namespace WpfApp1
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void smartControl_HInitWindow(object sender, EventArgs e)
+        private void SmartControl_HInitWindow(object sender, EventArgs e)
         {
-            HWindow = smartControl.HalconWindow;
+            HWindow = SmartControl.HalconWindow;
 
             //参考文档网址：https://blog.csdn.net/sinat_21001719/article/details/128647619
             #region 比例与偏移计算
             var dpd = DependencyPropertyDescriptor.FromProperty(HSmartWindowControlWPF.HImagePartProperty, typeof(HSmartWindowControlWPF));
-            dpd.AddValueChanged(smartControl, (o, es) =>
+            dpd.AddValueChanged(SmartControl, (o, es) =>
             {
-                var imgPart = smartControl.HImagePart;
-                _k = imgPart.Height / smartControl.ActualHeight;
+                var imgPart = SmartControl.HImagePart;
+                _k = imgPart.Height / SmartControl.ActualHeight;
                 _tx = imgPart.X;
                 _ty = imgPart.Y;
             });
@@ -239,13 +262,15 @@ namespace WpfApp1
             if (obj != null)
             {
                 obj.SetDrawingObjectParams(new HTuple("color"), new HTuple("red"));
-                HWindow.AttachDrawingObjectToWindow(obj);
-                DrawingObjects.Add(obj);
+                
                 obj.OnDrag(HDrawingObjectCallbackClass);
                 obj.OnResize(HDrawingObjectCallbackClass);
-
                 obj.OnAttach(HDrawingObjectCallbackClass);
                 obj.OnSelect(HDrawingObjectCallbackClass);
+                obj.OnDetach(HDrawingObjectCallbackClass);
+
+                HWindow.AttachDrawingObjectToWindow(obj);
+                DrawingObjects.Add(obj);
             }
             ClearDrawData();
 
@@ -404,6 +429,8 @@ namespace WpfApp1
                 ROIDatas[3].Value = drawobj.GetDrawingObjectParams("column2").D;
 
             }
+            
+            CurRegion.DispObj(HWindow);
         }
 
         /// <summary>
@@ -497,6 +524,9 @@ namespace WpfApp1
             double column1 = c1;
             double column2 = c2;
             HDrawingObject obj = HDrawingObject.CreateDrawingObject(HDrawingObject.HDrawingObjectType.RECTANGLE1, row1, column1, row2, column2);
+            var region = GenCurRegion(row1, column1, row2, column2);
+            RegionMerge(region);
+            region.Dispose();
             return obj;
         }
         /// <summary>
@@ -565,6 +595,59 @@ namespace WpfApp1
             double column2 = c2;
             HDrawingObject obj = HDrawingObject.CreateDrawingObject(HDrawingObject.HDrawingObjectType.LINE, row1, column1, row2, column2);
             return obj;
+        }
+
+        //生成当前区域
+        private HRegion GenCurRegion(params double[] param)
+        {
+            HRegion region = new HRegion();
+            HWindow.SetColor("#ff00ff40");
+            switch (ShapeType)
+            {
+                case EShape.Rectangle1:
+                    region.GenRectangle1(param[0], param[1], param[2], param[3]);
+                    break;
+                case EShape.Rectangle2:
+                    region.GenRectangle2(param[0], param[1], param[2], param[3], param[3]);
+                    break;
+                case EShape.Circle:
+                    region.GenCircle(param[0], param[1], param[2]);
+                    break;
+                case EShape.Ellipse:
+                    region.GenEllipse(param[0], param[1], param[2], param[3], param[4]);
+                    break;
+                case EShape.Line:
+                    region.GenRegionLine(param[0], param[1], param[2], param[3]);
+                    break;
+                default:
+                    break;
+            }
+            return region;
+        }
+        //区域融合
+        private void RegionMerge(HRegion region)
+        {
+            switch (Mode)
+            {
+                case EROIMode.Union:
+                    CurRegion = CurRegion.Union2(region);
+                    break;
+                case EROIMode.Difference:
+                    CurRegion = CurRegion.Difference(region);
+                    break;
+                case EROIMode.Intersection:
+                    CurRegion = CurRegion.Intersection(region);
+                    break;
+                default:
+                    break;
+            }
+        }
+        //裁剪区域
+        private void ReduceDomain(object parameter)
+        {
+            HImage image = DisplayImage.ReduceDomain(CurRegion);
+            HWindow.ClearWindow();
+            image.DispImage(HWindow);
         }
 
         /// <summary>
@@ -637,55 +720,56 @@ namespace WpfApp1
             Helper_Canvas.Children.Add(Shape);
         }
 
-        private void Rectangle1_Button_Click(object sender, RoutedEventArgs e)
+        private void CreateRectangle1(object parameter)
         {
             Helper_Canvas.Visibility = Visibility.Visible;
             ShapeType = EShape.Rectangle1;
             InitializeShape();
         }
-        private void Rectangle2_Button_Click(object sender, RoutedEventArgs e)
+        private void CreateRectangle2(object parameter)
         {
             Helper_Canvas.Visibility = Visibility.Visible;
             ShapeType = EShape.Rectangle2;
             InitializeShape();
         }
-        private void Circle_Button_Click(object sender, RoutedEventArgs e)
+        private void CreateCircle(object parameter)
         {
             Helper_Canvas.Visibility = Visibility.Visible;
             ShapeType = EShape.Circle;
             InitializeShape();
         }
-        private void Ellipse_Button_Click(object sender, RoutedEventArgs e)
+        private void CreateEllipse(object parameter)
         {
             Helper_Canvas.Visibility = Visibility.Visible;
             ShapeType = EShape.Ellipse;
             InitializeShape();
         }
-
-        private void Union_MenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            string url = "/Resources/union.png";
-            SelectedModeImg = new BitmapImage(new Uri(url, UriKind.Relative));
-            Mode = EROIMode.Union;
-        }
-        private void Intersection_MenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            string url = "/Resources/intersection.png";
-            SelectedModeImg = new BitmapImage(new Uri(url, UriKind.Relative));
-            Mode = EROIMode.Intersection;
-        }
-        private void Difference_MenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            string url = "/Resources/difference.png";
-            SelectedModeImg = new BitmapImage(new Uri(url, UriKind.Relative));
-            Mode = EROIMode.Difference;
-        }
-
-        private void Line_Button_Click(object sender, RoutedEventArgs e)
+        private void CreateLine(object parameter)
         {
             Helper_Canvas.Visibility = Visibility.Visible;
             ShapeType = EShape.Line;
             InitializeShape();
+        }
+
+        private void SelectMergeMode(object parameter)
+        {
+            string url = $"/Resources/{parameter}.png";
+            SelectedModeImg = new BitmapImage(new Uri(url, UriKind.Relative));
+            switch (parameter.ToString())
+            {
+                case "union":
+                    Mode = EROIMode.Union;
+                    break;
+                case "intersection":
+                    Mode = EROIMode.Intersection;
+                    break;
+                case "difference":
+                    Mode = EROIMode.Difference;
+                    break;
+                default:
+                    Mode = EROIMode.Union;
+                    break;
+            }
         }
 
         /// <summary>
@@ -693,7 +777,7 @@ namespace WpfApp1
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ClearAll_Button_Click(object sender, RoutedEventArgs e)
+        private void ClearAllROI(object parameter)
         {
             foreach (var obj in DrawingObjects)
             {
@@ -707,7 +791,7 @@ namespace WpfApp1
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ClearCur_Button_Click(object sender, RoutedEventArgs e)
+        private void ClearCurROI(object parameter)
         {
             if (SelectedHDrawingObject == null)
             {
