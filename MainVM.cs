@@ -22,6 +22,7 @@ namespace WpfApp1
             Imgs.Add(new HImage(@"C:\Users\Lenovo\Downloads\并集.png"));
             Imgs.Add(new HImage(@"C:\Users\Lenovo\Downloads\交集.png"));
             Imgs.Add(new HImage(@"C:\Users\Lenovo\Downloads\差集.png"));
+            DisplayImg = Imgs[0];
         }
     }
 }

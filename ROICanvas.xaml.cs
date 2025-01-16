@@ -13,11 +13,13 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Documents.Serialization;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Xml.Serialization;
 using static HalconDotNet.HDrawingObject;
 
 namespace WpfApp1
@@ -150,10 +152,10 @@ namespace WpfApp1
         EShape ShapeType;
         Shape Shape;
         HRegion CurRegion = new HRegion();
-        EROIMode Mode = EROIMode.Union; 
+        ERegionMergeMode Mode = ERegionMergeMode.Union; 
 
         //roi集合
-        ObservableCollection<HDrawingObject> DrawingObjects = new ObservableCollection<HDrawingObject>();
+        public List<HDrawingObjectData> HDrawingObjects { get; set; } = new List<HDrawingObjectData>();
         HDrawingObject SelectedHDrawingObject;
         //roi数据集合
         public ObservableCollection<ROIData> ROIDatas { get; set; } = new ObservableCollection<ROIData>();
@@ -199,8 +201,6 @@ namespace WpfApp1
             ReduceDomainCommand = new DelegateCommand(ReduceDomain);
             ClearCurROICommand = new DelegateCommand(ClearCurROI);
             ClearAllROICommand = new DelegateCommand(ClearAllROI);
-
-            CurRegion.GenEmptyRegion();
 
             this.DataContext = this;
         }
@@ -262,6 +262,7 @@ namespace WpfApp1
             if (obj != null)
             {
                 obj.SetDrawingObjectParams(new HTuple("color"), new HTuple("red"));
+                HDrawingObjects.Add(new HDrawingObjectData(obj, Mode, ShapeType));
                 
                 obj.OnDrag(HDrawingObjectCallbackClass);
                 obj.OnResize(HDrawingObjectCallbackClass);
@@ -270,7 +271,6 @@ namespace WpfApp1
                 obj.OnDetach(HDrawingObjectCallbackClass);
 
                 HWindow.AttachDrawingObjectToWindow(obj);
-                DrawingObjects.Add(obj);
             }
             ClearDrawData();
 
@@ -429,8 +429,66 @@ namespace WpfApp1
                 ROIDatas[3].Value = drawobj.GetDrawingObjectParams("column2").D;
 
             }
-            
-            CurRegion.DispObj(HWindow);
+
+            //if (!isDown && type1 != "on_drag")
+            {
+                
+                window.ClearWindow();
+                CurRegion?.Dispose();
+                DisplayImage.DispImage(window);
+                GenRegions();
+                window.SetColor("#ff00ff40");
+                CurRegion?.DispObj(window);
+            }
+
+        }
+        /// <summary>
+        /// 生成融合后区域
+        /// </summary>
+        /// <param name="param"></param>
+        /// <returns></returns>
+        private void GenRegions()
+        {
+            bool isFirst = true;
+            foreach (var item in HDrawingObjects)
+            {
+                HObject obj = item.HDrawingObject.GetDrawingObjectIconic();      
+                HRegion region = new HRegion(obj);
+
+                if (isFirst)
+                {
+                    CurRegion = region;
+                    isFirst = false;
+                }
+                else
+                {
+                    RegionMerge(region);
+                    region.Dispose();
+                }
+                obj.Dispose();
+                obj = null;
+            }
+        }
+        /// <summary>
+        /// 区域融合
+        /// </summary>
+        /// <param name="region"></param>
+        private void RegionMerge(HRegion region)
+        {
+            switch (Mode)
+            {
+                case ERegionMergeMode.Union:
+                    CurRegion = CurRegion.Union2(region);
+                    break;
+                case ERegionMergeMode.Difference:
+                    CurRegion = CurRegion.Difference(region);
+                    break;
+                case ERegionMergeMode.Intersection:
+                    CurRegion = CurRegion.Intersection(region);
+                    break;
+                default:
+                    break;
+            }
         }
 
         /// <summary>
@@ -524,9 +582,6 @@ namespace WpfApp1
             double column1 = c1;
             double column2 = c2;
             HDrawingObject obj = HDrawingObject.CreateDrawingObject(HDrawingObject.HDrawingObjectType.RECTANGLE1, row1, column1, row2, column2);
-            var region = GenCurRegion(row1, column1, row2, column2);
-            RegionMerge(region);
-            region.Dispose();
             return obj;
         }
         /// <summary>
@@ -595,59 +650,6 @@ namespace WpfApp1
             double column2 = c2;
             HDrawingObject obj = HDrawingObject.CreateDrawingObject(HDrawingObject.HDrawingObjectType.LINE, row1, column1, row2, column2);
             return obj;
-        }
-
-        //生成当前区域
-        private HRegion GenCurRegion(params double[] param)
-        {
-            HRegion region = new HRegion();
-            HWindow.SetColor("#ff00ff40");
-            switch (ShapeType)
-            {
-                case EShape.Rectangle1:
-                    region.GenRectangle1(param[0], param[1], param[2], param[3]);
-                    break;
-                case EShape.Rectangle2:
-                    region.GenRectangle2(param[0], param[1], param[2], param[3], param[3]);
-                    break;
-                case EShape.Circle:
-                    region.GenCircle(param[0], param[1], param[2]);
-                    break;
-                case EShape.Ellipse:
-                    region.GenEllipse(param[0], param[1], param[2], param[3], param[4]);
-                    break;
-                case EShape.Line:
-                    region.GenRegionLine(param[0], param[1], param[2], param[3]);
-                    break;
-                default:
-                    break;
-            }
-            return region;
-        }
-        //区域融合
-        private void RegionMerge(HRegion region)
-        {
-            switch (Mode)
-            {
-                case EROIMode.Union:
-                    CurRegion = CurRegion.Union2(region);
-                    break;
-                case EROIMode.Difference:
-                    CurRegion = CurRegion.Difference(region);
-                    break;
-                case EROIMode.Intersection:
-                    CurRegion = CurRegion.Intersection(region);
-                    break;
-                default:
-                    break;
-            }
-        }
-        //裁剪区域
-        private void ReduceDomain(object parameter)
-        {
-            HImage image = DisplayImage.ReduceDomain(CurRegion);
-            HWindow.ClearWindow();
-            image.DispImage(HWindow);
         }
 
         /// <summary>
@@ -751,6 +753,35 @@ namespace WpfApp1
             InitializeShape();
         }
 
+        /// <summary>
+        /// 裁剪区域
+        /// </summary>
+        /// <param name="parameter"></param>
+        private void ReduceDomain(object parameter)
+        {
+            HImage image = DisplayImage.ReduceDomain(CurRegion);
+            HWindow.ClearWindow();
+            image.DispImage(HWindow);
+        }
+
+
+        bool isDown = false;
+        private void Grid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            isDown = true;
+            
+        }
+
+        private void Grid_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            isDown = false;
+            //HDrawingObjectCallbackClass(SelectedHDrawingObject, HWindow, null);
+        }
+
+        /// <summary>
+        /// 设置区域融合模式
+        /// </summary>
+        /// <param name="parameter">图标名</param>
         private void SelectMergeMode(object parameter)
         {
             string url = $"/Resources/{parameter}.png";
@@ -758,16 +789,16 @@ namespace WpfApp1
             switch (parameter.ToString())
             {
                 case "union":
-                    Mode = EROIMode.Union;
+                    Mode = ERegionMergeMode.Union;
                     break;
                 case "intersection":
-                    Mode = EROIMode.Intersection;
+                    Mode = ERegionMergeMode.Intersection;
                     break;
                 case "difference":
-                    Mode = EROIMode.Difference;
+                    Mode = ERegionMergeMode.Difference;
                     break;
                 default:
-                    Mode = EROIMode.Union;
+                    Mode = ERegionMergeMode.Union;
                     break;
             }
         }
@@ -779,12 +810,12 @@ namespace WpfApp1
         /// <param name="e"></param>
         private void ClearAllROI(object parameter)
         {
-            foreach (var obj in DrawingObjects)
+            foreach (var item in HDrawingObjects)
             {
-                HWindow.DetachDrawingObjectFromWindow(obj);
-                obj.Dispose();
+                HWindow.DetachDrawingObjectFromWindow(item.HDrawingObject);
+                item.HDrawingObject.Dispose();
             }
-            DrawingObjects.Clear();
+            HDrawingObjects.Clear();
         }
         /// <summary>
         /// 清除当前ROI
@@ -797,7 +828,7 @@ namespace WpfApp1
             {
                 return;
             }
-            DrawingObjects.Remove(SelectedHDrawingObject);
+            HDrawingObjects.RemoveAll(t => t.HDrawingObject.ID == SelectedHDrawingObject.ID);
             HWindow.DetachDrawingObjectFromWindow(SelectedHDrawingObject);
             SelectedHDrawingObject.Dispose();
             SelectedHDrawingObject = null;
@@ -820,7 +851,7 @@ namespace WpfApp1
         Ellipse,
         Line,
     }
-    public enum EROIMode
+    public enum ERegionMergeMode
     {
         Union,
         Difference,
@@ -861,5 +892,17 @@ namespace WpfApp1
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
+    }
+    public class HDrawingObjectData
+    {
+        public HDrawingObject HDrawingObject { get; set; }
+        public ERegionMergeMode Mode { get; set; }
+        public EShape Shape { get; set; }
+        public HDrawingObjectData(HDrawingObject obj, ERegionMergeMode mode, EShape shape)
+        {
+            HDrawingObject = obj;
+            Mode = mode;
+            Shape = shape;
+        }
     }
 }
