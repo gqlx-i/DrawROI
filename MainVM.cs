@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace WpfApp1
     class MainVM
     {
         public HImage DisplayImg { get; set; }
+
         public ObservableCollection<HImage> Imgs { get; set; } = new ObservableCollection<HImage>();
 
         public MainVM()

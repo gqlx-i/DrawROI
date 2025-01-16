@@ -429,18 +429,18 @@ namespace WpfApp1
             }
             
             //清除窗口
-            window.ClearWindow();
+            HWindow.ClearWindow();
             //释放上一次Curregion
             CurRegion?.Dispose();
             CurRegion = null;
             //显示图像
-            DisplayImage.DispImage(window);
+            DisplayImage.DispImage(HWindow);
             //生成融合后区域
             GenRegions();
             //设置区域颜色
-            window.SetColor("#ff00ff40");
+            HWindow.SetColor("#ff00ff40");
             //显示融合后区域
-            CurRegion?.DispObj(window);
+            CurRegion?.DispObj(HWindow);
         }
         /// <summary>
         /// 生成融合后区域
