@@ -31,9 +31,6 @@ namespace WpfApp1
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        /// <summary>
-        /// 十字辅助线
-        /// </summary>
         public HRegion CrossLine;
         private HRegion _displayCrossLine;
         /// <summary>
@@ -270,6 +267,7 @@ namespace WpfApp1
                 obj.OnSelect(HDrawingObjectCallbackClass);
                 obj.OnDetach(HDrawingObjectCallbackClass);
 
+                //必须放在OnAttach后附加obj才会触发回调函数
                 HWindow.AttachDrawingObjectToWindow(obj);
             }
             ClearDrawData();
@@ -429,18 +427,20 @@ namespace WpfApp1
                 ROIDatas[3].Value = drawobj.GetDrawingObjectParams("column2").D;
 
             }
-
-            //if (!isDown && type1 != "on_drag")
-            {
-                
-                window.ClearWindow();
-                CurRegion?.Dispose();
-                DisplayImage.DispImage(window);
-                GenRegions();
-                window.SetColor("#ff00ff40");
-                CurRegion?.DispObj(window);
-            }
-
+            
+            //清除窗口
+            window.ClearWindow();
+            //释放上一次Curregion
+            CurRegion?.Dispose();
+            CurRegion = null;
+            //显示图像
+            DisplayImage.DispImage(window);
+            //生成融合后区域
+            GenRegions();
+            //设置区域颜色
+            window.SetColor("#ff00ff40");
+            //显示融合后区域
+            CurRegion?.DispObj(window);
         }
         /// <summary>
         /// 生成融合后区域
@@ -462,7 +462,8 @@ namespace WpfApp1
                 }
                 else
                 {
-                    RegionMerge(region);
+                    RegionMerge(region, item.Mode);
+                    //第一个区域的地址先不释放
                     region.Dispose();
                 }
                 obj.Dispose();
@@ -473,9 +474,9 @@ namespace WpfApp1
         /// 区域融合
         /// </summary>
         /// <param name="region"></param>
-        private void RegionMerge(HRegion region)
+        private void RegionMerge(HRegion region, ERegionMergeMode mode)
         {
-            switch (Mode)
+            switch (mode)
             {
                 case ERegionMergeMode.Union:
                     CurRegion = CurRegion.Union2(region);
@@ -764,20 +765,6 @@ namespace WpfApp1
             image.DispImage(HWindow);
         }
 
-
-        bool isDown = false;
-        private void Grid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            isDown = true;
-            
-        }
-
-        private void Grid_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            isDown = false;
-            //HDrawingObjectCallbackClass(SelectedHDrawingObject, HWindow, null);
-        }
-
         /// <summary>
         /// 设置区域融合模式
         /// </summary>
@@ -786,21 +773,7 @@ namespace WpfApp1
         {
             string url = $"/Resources/{parameter}.png";
             SelectedModeImg = new BitmapImage(new Uri(url, UriKind.Relative));
-            switch (parameter.ToString())
-            {
-                case "union":
-                    Mode = ERegionMergeMode.Union;
-                    break;
-                case "intersection":
-                    Mode = ERegionMergeMode.Intersection;
-                    break;
-                case "difference":
-                    Mode = ERegionMergeMode.Difference;
-                    break;
-                default:
-                    Mode = ERegionMergeMode.Union;
-                    break;
-            }
+            Mode = (ERegionMergeMode)parameter;
         }
 
         /// <summary>
@@ -810,12 +783,16 @@ namespace WpfApp1
         /// <param name="e"></param>
         private void ClearAllROI(object parameter)
         {
-            foreach (var item in HDrawingObjects)
+            while (HDrawingObjects.Count > 0)
             {
+                var item = HDrawingObjects[0];
+                //必须先移除再取消附加，这样界面不会有残留
+                HDrawingObjects.Remove(item);
                 HWindow.DetachDrawingObjectFromWindow(item.HDrawingObject);
                 item.HDrawingObject.Dispose();
+                item.HDrawingObject = null;
             }
-            HDrawingObjects.Clear();
+            ROIDatas.Clear();
         }
         /// <summary>
         /// 清除当前ROI
@@ -828,11 +805,14 @@ namespace WpfApp1
             {
                 return;
             }
+            //必须先移除再取消附加，这样界面不会有残留
             HDrawingObjects.RemoveAll(t => t.HDrawingObject.ID == SelectedHDrawingObject.ID);
             HWindow.DetachDrawingObjectFromWindow(SelectedHDrawingObject);
             SelectedHDrawingObject.Dispose();
             SelectedHDrawingObject = null;
+            ROIDatas.Clear();
         }
+
         /// <summary>
         /// 清除绘图图形
         /// </summary>

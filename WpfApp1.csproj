@@ -11,11 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Resource Include="Resources\intersection.png" />
-    <Resource Include="Resources\difference.png">
+    <Resource Include="Resources\Intersection.png" />
+    <Resource Include="Resources\Difference.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
-    <Resource Include="Resources\union.png">
+    <Resource Include="Resources\Union.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
   </ItemGroup>

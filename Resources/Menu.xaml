@@ -1,26 +1,27 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:loacl="clr-namespace:WpfApp1">
     <ContextMenu x:Key="ROICanvas_Menu" Width="120">
         <MenuItem Header="模式" IsEnabled="True">
-            <MenuItem Header="并集" Command="{Binding SelectMergeModeCommand}" CommandParameter="union">
+            <MenuItem Header="并集" Command="{Binding SelectMergeModeCommand}" CommandParameter="{x:Static loacl:ERegionMergeMode.Union}">
                 <MenuItem.Icon>
                     <Viewbox>
-                        <Image Source="pack://application:,,,/Resources/union.png"/>
+                        <Image Source="pack://application:,,,/Resources/Union.png"/>
                     </Viewbox>
                 </MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="交集" Command="{Binding SelectMergeModeCommand}" CommandParameter="intersection">
+            <MenuItem Header="交集" Command="{Binding SelectMergeModeCommand}" CommandParameter="{x:Static loacl:ERegionMergeMode.Intersection}">
                 <MenuItem.Icon>
                     <Viewbox>
                         <!--同一个程序集内可以省略前缀-->
-                        <Image Source="/Resources/intersection.png"/>
+                        <Image Source="/Resources/Intersection.png"/>
                     </Viewbox>
                 </MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="差集" Command="{Binding SelectMergeModeCommand}" CommandParameter="difference">
+            <MenuItem Header="差集" Command="{Binding SelectMergeModeCommand}" CommandParameter="{x:Static loacl:ERegionMergeMode.Difference}">
                 <MenuItem.Icon>
                     <Viewbox>
-                        <Image Source="/Resources/difference.png"/>
+                        <Image Source="/Resources/Difference.png"/>
                     </Viewbox>
                 </MenuItem.Icon>
             </MenuItem>
