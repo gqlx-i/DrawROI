@@ -25,6 +25,13 @@
                     </Viewbox>
                 </MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="对称集" Command="{Binding SelectMergeModeCommand}" CommandParameter="{x:Static loacl:ERegionMergeMode.XOR}">
+                <MenuItem.Icon>
+                    <Viewbox>
+                        <Image Source="/Resources/XOR.png"/>
+                    </Viewbox>
+                </MenuItem.Icon>
+            </MenuItem>
             <MenuItem.Icon>
                 <Viewbox>
                     <Image Source="{Binding SelectedModeImg}"/>

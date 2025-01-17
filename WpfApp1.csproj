@@ -11,6 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\XOR.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Resources\Intersection.png" />
     <Resource Include="Resources\Difference.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
@@ -18,6 +22,7 @@
     <Resource Include="Resources\Union.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
+    <Resource Include="Resources\XOR.png" />
   </ItemGroup>
 
   <ItemGroup>

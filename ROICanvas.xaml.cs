@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Security.Policy;
 using System.Text;
@@ -149,6 +150,7 @@ namespace WpfApp1
         EShape ShapeType;
         Shape Shape;
         HRegion CurRegion = new HRegion();
+        HXLDCont CurXLDCont = new HXLDCont();
         ERegionMergeMode Mode = ERegionMergeMode.Union; 
 
         //roi集合
@@ -438,9 +440,10 @@ namespace WpfApp1
             //生成融合后区域
             GenRegions();
             //设置区域颜色
-            HWindow.SetColor("#ff00ff40");
+            HWindow.SetColor("#ffffff40");
             //显示融合后区域
             CurRegion?.DispObj(HWindow);
+            ReduceDomain(null);
         }
         /// <summary>
         /// 生成融合后区域
@@ -486,6 +489,9 @@ namespace WpfApp1
                     break;
                 case ERegionMergeMode.Intersection:
                     CurRegion = CurRegion.Intersection(region);
+                    break;
+                case ERegionMergeMode.XOR:
+                    CurRegion = CurRegion.SymmDifference(region);
                     break;
                 default:
                     break;
@@ -755,14 +761,33 @@ namespace WpfApp1
         }
 
         /// <summary>
-        /// 裁剪区域
+        /// 创建模板
         /// </summary>
         /// <param name="parameter"></param>
         private void ReduceDomain(object parameter)
         {
-            HImage image = DisplayImage.ReduceDomain(CurRegion);
-            HWindow.ClearWindow();
-            image.DispImage(HWindow);
+            DisplayImage.GetImageSize(out HTuple width, out HTuple height);
+            HRegion hRegion = new HRegion(0, 0, height - 1, width - 1);
+            hRegion.Intersection(CurRegion);
+            HImage reduceImage = DisplayImage.ReduceDomain(hRegion);
+            HShapeModel hShapeModel = new HShapeModel();
+            hShapeModel.CreateShapeModel(reduceImage, "auto", -0.39, 0.79, "auto", "auto", "use_polarity", "auto", "auto");
+            CurXLDCont?.Dispose();
+            HXLDCont tempXLD = hShapeModel.GetShapeModelContours(1);
+            
+            hRegion.AreaCenter(out double row, out double col);
+            HHomMat2D hHomMat2D = new HHomMat2D();
+            hHomMat2D.VectorAngleToRigid(0, 0, 0, row, col, 0);
+            CurXLDCont = hHomMat2D.AffineTransContourXld(tempXLD);
+
+            width.Dispose();
+            height.Dispose();
+            hRegion.Dispose();
+            reduceImage.Dispose();
+            hShapeModel.Dispose();
+            tempXLD.Dispose();
+            HWindow.SetColor("green");
+            CurXLDCont.DispObj(HWindow);
         }
 
         /// <summary>
@@ -835,7 +860,8 @@ namespace WpfApp1
     {
         Union,
         Difference,
-        Intersection
+        Intersection,
+        XOR
     }
 
     public class ROIData : INotifyPropertyChanged
