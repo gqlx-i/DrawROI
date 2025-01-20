@@ -143,19 +143,20 @@ namespace WpfApp1
         public ICommand ClearCurROICommand { get; set; }
         //清除所有ROI
         public ICommand ClearAllROICommand { get; set; }
-        //裁剪出区域
-        public ICommand ReduceDomainCommand { get; set; }
         #endregion
 
         EShape ShapeType;
         Shape Shape;
         HRegion CurRegion = new HRegion();
+        string CurRegionColor = "#ffff0040";
         HXLDCont CurXLDCont = new HXLDCont();
+        string CurXLDContColor = "green";
         ERegionMergeMode Mode = ERegionMergeMode.Union; 
 
         //roi集合
         public List<HDrawingObjectData> HDrawingObjects { get; set; } = new List<HDrawingObjectData>();
         HDrawingObject SelectedHDrawingObject;
+        string HDrawingObjectColor = "red";
         //roi数据集合
         public ObservableCollection<ROIData> ROIDatas { get; set; } = new ObservableCollection<ROIData>();
 
@@ -173,7 +174,7 @@ namespace WpfApp1
         double r1, r2, c1, c2;
         double angle = 0;
 
-        private BitmapImage _selectedModeImg = new BitmapImage(new Uri("/Resources/union.png", UriKind.Relative));
+        private BitmapImage _selectedModeImg = new BitmapImage(new Uri("/Resources/Union.png", UriKind.Relative));
         public BitmapImage SelectedModeImg
         {
             get => _selectedModeImg;
@@ -197,7 +198,6 @@ namespace WpfApp1
             CreateCircleCommand = new DelegateCommand(CreateCircle);
             CreateEllipseCommand = new DelegateCommand(CreateEllipse);
             CreateLineCommand = new DelegateCommand(CreateLine);
-            ReduceDomainCommand = new DelegateCommand(ReduceDomain);
             ClearCurROICommand = new DelegateCommand(ClearCurROI);
             ClearAllROICommand = new DelegateCommand(ClearAllROI);
 
@@ -260,9 +260,13 @@ namespace WpfApp1
             HDrawingObject obj = DrawShape();
             if (obj != null)
             {
-                obj.SetDrawingObjectParams(new HTuple("color"), new HTuple("red"));
-                HDrawingObjects.Add(new HDrawingObjectData(obj, Mode, ShapeType));
+                //设置HDrawingObject样式
+                obj.SetDrawingObjectParams("color", HDrawingObjectColor);
+                //obj.SetDrawingObjectParams("line_width", 1);
+                //obj.SetDrawingObjectParams(new HTuple("line_style"), new HTuple(10));
+                HDrawingObjects.Add(new HDrawingObjectData(obj, Mode));
                 
+                //设置回调
                 obj.OnDrag(HDrawingObjectCallbackClass);
                 obj.OnResize(HDrawingObjectCallbackClass);
                 obj.OnAttach(HDrawingObjectCallbackClass);
@@ -432,18 +436,15 @@ namespace WpfApp1
             
             //清除窗口
             HWindow.ClearWindow();
-            //释放上一次Curregion
-            CurRegion?.Dispose();
-            CurRegion = null;
             //显示图像
             DisplayImage.DispImage(HWindow);
+            if (IsShowCrossLine)
+            {
+                CrossLine.DispObj(HWindow);
+            }
             //生成融合后区域
             GenRegions();
-            //设置区域颜色
-            HWindow.SetColor("#ffffff40");
-            //显示融合后区域
-            CurRegion?.DispObj(HWindow);
-            ReduceDomain(null);
+            CreateTemplate();
         }
         /// <summary>
         /// 生成融合后区域
@@ -452,6 +453,9 @@ namespace WpfApp1
         /// <returns></returns>
         private void GenRegions()
         {
+            //释放上一次Curregion
+            CurRegion?.Dispose();
+            CurRegion = null;
             bool isFirst = true;
             foreach (var item in HDrawingObjects)
             {
@@ -472,6 +476,10 @@ namespace WpfApp1
                 obj.Dispose();
                 obj = null;
             }
+            //设置区域颜色
+            HWindow.SetColor(CurRegionColor);
+            //显示融合后区域
+            CurRegion?.DispObj(HWindow);
         }
         /// <summary>
         /// 区域融合
@@ -495,6 +503,47 @@ namespace WpfApp1
                     break;
                 default:
                     break;
+            }
+        }
+        /// <summary>
+        /// 创建模板
+        /// </summary>
+        /// <param name="parameter"></param>
+        private void CreateTemplate()
+        {
+            try
+            {
+                HImage reduceImage = DisplayImage.ReduceDomain(CurRegion);
+                HShapeModel hShapeModel = new HShapeModel();
+                hShapeModel.CreateShapeModel(reduceImage, "auto", -0.39, 0.79, "auto", "auto", "use_polarity", "auto", "auto");
+                hShapeModel.GetShapeModelParams(out double angleStart, out double angleExtent, out double angleStep, out HTuple scaleMin,
+                                    out HTuple scaleMax, out HTuple scaleStep, out string metric, out int minContrast);
+                CurXLDCont?.Dispose();
+                HXLDCont tempXLD = hShapeModel.GetShapeModelContours(1);
+                DisplayImage.GetImageSize(out HTuple width, out HTuple height);
+                //因为ROI可能会移出图像外，所以需要与图像本身做交集
+                HRegion imgRegion = new HRegion(0, 0, height - 1, width - 1);
+                HRegion mergedRegion = imgRegion.Intersection(CurRegion);
+                //计算区域中心
+                mergedRegion.AreaCenter(out double row, out double col);
+                //把模板轮廓从0，0点移动到区域中心
+                HHomMat2D hHomMat2D = new HHomMat2D();
+                hHomMat2D.VectorAngleToRigid(0, 0, 0, row, col, 0);
+                CurXLDCont = hHomMat2D.AffineTransContourXld(tempXLD);
+
+                width.Dispose();
+                height.Dispose();
+                imgRegion.Dispose();
+                mergedRegion.Dispose();
+                reduceImage.Dispose();
+                hShapeModel.Dispose();
+                tempXLD.Dispose();
+                HWindow.SetColor(CurXLDContColor);
+                CurXLDCont.DispObj(HWindow);
+            }
+            catch (Exception ex)
+            {
+
             }
         }
 
@@ -588,7 +637,7 @@ namespace WpfApp1
             double row2 = r2;
             double column1 = c1;
             double column2 = c2;
-            HDrawingObject obj = HDrawingObject.CreateDrawingObject(HDrawingObject.HDrawingObjectType.RECTANGLE1, row1, column1, row2, column2);
+            HDrawingObject obj = CreateDrawingObject(HDrawingObjectType.RECTANGLE1, row1, column1, row2, column2);
             return obj;
         }
         /// <summary>
@@ -603,7 +652,7 @@ namespace WpfApp1
             double phi = angle * Math.PI / 180.0 * -1;
             double length1 = Math.Sqrt(Math.Pow(c2 - c1, 2) + Math.Pow(r2 - r1, 2));
             double length2 = Shape.Height * _k / 2;
-            HDrawingObject obj = HDrawingObject.CreateDrawingObject(HDrawingObject.HDrawingObjectType.RECTANGLE2, row, column, phi, length1, length2);
+            HDrawingObject obj = CreateDrawingObject(HDrawingObjectType.RECTANGLE2, row, column, phi, length1, length2);
             return obj;
         }
         /// <summary>
@@ -616,7 +665,7 @@ namespace WpfApp1
             double row = point.Y;
             double column = point.X;
             double radius = Math.Sqrt(Math.Pow(c2 - c1, 2) + Math.Pow(r2 - r1, 2));
-            HDrawingObject obj = HDrawingObject.CreateDrawingObject(HDrawingObject.HDrawingObjectType.CIRCLE, row, column, radius);
+            HDrawingObject obj = CreateDrawingObject(HDrawingObjectType.CIRCLE, row, column, radius);
             return obj;
         }
         /// <summary>
@@ -635,8 +684,8 @@ namespace WpfApp1
             double phi = angle * Math.PI / 180.0 * -1;  // 转换为弧度
 
             // 创建椭圆，使用实际的旋转角度和长短轴
-            HDrawingObject obj = HDrawingObject.CreateDrawingObject(
-                HDrawingObject.HDrawingObjectType.ELLIPSE,
+            HDrawingObject obj = CreateDrawingObject(
+                HDrawingObjectType.ELLIPSE,
                 row,
                 column,
                 phi,      // 旋转角度（弧度）
@@ -655,7 +704,7 @@ namespace WpfApp1
             double row2 = r2;
             double column1 = c1;
             double column2 = c2;
-            HDrawingObject obj = HDrawingObject.CreateDrawingObject(HDrawingObject.HDrawingObjectType.LINE, row1, column1, row2, column2);
+            HDrawingObject obj = CreateDrawingObject(HDrawingObjectType.LINE, row1, column1, row2, column2);
             return obj;
         }
 
@@ -758,36 +807,6 @@ namespace WpfApp1
             Helper_Canvas.Visibility = Visibility.Visible;
             ShapeType = EShape.Line;
             InitializeShape();
-        }
-
-        /// <summary>
-        /// 创建模板
-        /// </summary>
-        /// <param name="parameter"></param>
-        private void ReduceDomain(object parameter)
-        {
-            DisplayImage.GetImageSize(out HTuple width, out HTuple height);
-            HRegion hRegion = new HRegion(0, 0, height - 1, width - 1);
-            hRegion.Intersection(CurRegion);
-            HImage reduceImage = DisplayImage.ReduceDomain(hRegion);
-            HShapeModel hShapeModel = new HShapeModel();
-            hShapeModel.CreateShapeModel(reduceImage, "auto", -0.39, 0.79, "auto", "auto", "use_polarity", "auto", "auto");
-            CurXLDCont?.Dispose();
-            HXLDCont tempXLD = hShapeModel.GetShapeModelContours(1);
-            
-            hRegion.AreaCenter(out double row, out double col);
-            HHomMat2D hHomMat2D = new HHomMat2D();
-            hHomMat2D.VectorAngleToRigid(0, 0, 0, row, col, 0);
-            CurXLDCont = hHomMat2D.AffineTransContourXld(tempXLD);
-
-            width.Dispose();
-            height.Dispose();
-            hRegion.Dispose();
-            reduceImage.Dispose();
-            hShapeModel.Dispose();
-            tempXLD.Dispose();
-            HWindow.SetColor("green");
-            CurXLDCont.DispObj(HWindow);
         }
 
         /// <summary>
@@ -903,12 +922,10 @@ namespace WpfApp1
     {
         public HDrawingObject HDrawingObject { get; set; }
         public ERegionMergeMode Mode { get; set; }
-        public EShape Shape { get; set; }
-        public HDrawingObjectData(HDrawingObject obj, ERegionMergeMode mode, EShape shape)
+        public HDrawingObjectData(HDrawingObject obj, ERegionMergeMode mode)
         {
             HDrawingObject = obj;
             Mode = mode;
-            Shape = shape;
         }
     }
 }

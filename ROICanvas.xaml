@@ -12,18 +12,20 @@
             <ColumnDefinition Width="2*"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <ha:HSmartWindowControlWPF x:Name="SmartControl" ContextMenu="{StaticResource ROICanvas_Menu}" Grid.Column="0" HInitWindow="SmartControl_HInitWindow">
+        <ha:HSmartWindowControlWPF x:Name="SmartControl" HLineStyle="4" ContextMenu="{StaticResource ROICanvas_Menu}" Grid.Column="0" HInitWindow="SmartControl_HInitWindow">
             <ha:HIconicDisplayObjectWPF IconicObject="{Binding DisplayImage, Mode=OneWay}" />
             <ha:HIconicDisplayObjectWPF HColor="green" IconicObject="{Binding DisplayCrossLine, Mode=OneWay}" />
         </ha:HSmartWindowControlWPF>
         <Canvas x:Name="Helper_Canvas" Grid.Column="0" Panel.ZIndex="1" Visibility="Collapsed" Background="Transparent" MouseLeftButtonDown="Helper_Canvas_MouseLeftButtonDown" MouseRightButtonDown="Helper_Canvas_MouseRightButtonDown" MouseLeftButtonUp="Helper_Canvas_MouseLeftButtonUp" MouseMove="Helper_Canvas_MouseMove"/>
-        <GroupBox Header="ROI信息" Grid.Column="1">
-            <DataGrid ItemsSource="{Binding ROIDatas}" AutoGenerateColumns="False">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
-                    <DataGridTextColumn Header="Value" Binding="{Binding Value, StringFormat=N10}" Width="*"/>
-                </DataGrid.Columns>
-            </DataGrid>
-        </GroupBox>
+        <TreeView Grid.Column="1">
+            <TreeViewItem Header="ROI信息">
+                <DataGrid ItemsSource="{Binding ROIDatas}" AutoGenerateColumns="False">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="auto"/>
+                        <DataGridTextColumn Header="Value" Binding="{Binding Value, StringFormat=N10}" Width="auto"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TreeViewItem>
+        </TreeView>
     </Grid>
 </UserControl>

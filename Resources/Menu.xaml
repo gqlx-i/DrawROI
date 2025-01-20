@@ -83,13 +83,6 @@
             </MenuItem.Icon>
         </MenuItem>
         <Separator/>
-        <MenuItem Header="裁剪区域" Command="{Binding ReduceDomainCommand}">
-            <MenuItem.Icon>
-                <Viewbox>
-                    <Path Data="{StaticResource ClearCur}" Fill="Black"/>
-                </Viewbox>
-            </MenuItem.Icon>
-        </MenuItem>
         <Separator/>
         <MenuItem Header="清除当前ROI" Command="{Binding ClearCurROICommand}">
             <MenuItem.Icon>
