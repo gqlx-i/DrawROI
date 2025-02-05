@@ -123,6 +123,8 @@ namespace WpfApp1
                     control!.DisplayCrossLine = control!.CrossLine;
                 }
             }
+            control.HWindow?.DetachBackgroundFromWindow();
+            control.ClearAllROI(null);
         }
         #endregion
 
@@ -167,8 +169,8 @@ namespace WpfApp1
         bool isMouseDown = false;
 
         private double _k = 1;
-        private double _tx = 0;
-        private double _ty = 0;
+        private double _offsetX = 0;
+        private double _offsetY = 0;
 
         public Point start_point, end_point;
         double r1, r2, c1, c2;
@@ -220,8 +222,8 @@ namespace WpfApp1
             {
                 var imgPart = SmartControl.HImagePart;
                 _k = imgPart.Height / SmartControl.ActualHeight;
-                _tx = imgPart.X;
-                _ty = imgPart.Y;
+                _offsetX = imgPart.X;
+                _offsetY = imgPart.Y;
             });
 
             #endregion
@@ -279,7 +281,7 @@ namespace WpfApp1
             ClearDrawData();
 
             //HHomMat2D homMat2D = new HHomMat2D();
-            //homMat2D.HomMat2dTranslate(_tx, _ty);
+            //homMat2D.HomMat2dTranslate(_offsetX, _offsetY);
             //homMat2D.HomMat2dScale(1, 1, _k, _k);
             //homMat2D.AffineTransRegion(obj, "nearest_neighbor");
         }
@@ -437,7 +439,7 @@ namespace WpfApp1
             //清除窗口
             HWindow.ClearWindow();
             //显示图像
-            DisplayImage.DispImage(HWindow);
+            HWindow.AttachBackgroundToWindow(DisplayImage);
             if (IsShowCrossLine)
             {
                 CrossLine.DispObj(HWindow);
@@ -446,6 +448,7 @@ namespace WpfApp1
             GenRegions();
             CreateTemplate();
         }
+
         /// <summary>
         /// 生成融合后区域
         /// </summary>
@@ -602,8 +605,8 @@ namespace WpfApp1
         {
             new_point = new Point()
             {
-                X = _k * px + _tx,
-                Y = _k * py + _ty
+                X = _k * px + _offsetX,
+                Y = _k * py + _offsetY
             };
         }
 
